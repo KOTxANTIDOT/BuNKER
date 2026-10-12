@@ -1,71 +1,79 @@
-name: Build BunkerKot ARM64 APK
+name: Build Bunker Kot
 
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Find project archive
+        shell: bash
+        run: |
+          set -e
+
+          ZIP_FILE=$(find . -maxdepth 2 -type f -name 'BunkerKotAndroid_v*.zip' | head -n 1)
+
+          if [ -z "$ZIP_FILE" ]; then
+            echo "Project archive not found."
+            echo "Expected: BunkerKotAndroid_v*.zip"
+            exit 1
+          fi
+
+          echo "Using archive: $ZIP_FILE"
+
+          rm -rf BunkerKotAndroid
+          unzip -q "$ZIP_FILE"
+
+          if [ -d "BunkerKotAndroid/BunkerKotAndroid" ]; then
+            mv BunkerKotAndroid/BunkerKotAndroid BunkerKotAndroid_tmp
+            rm -rf BunkerKotAndroid
+            mv BunkerKotAndroid_tmp BunkerKotAndroid
+          fi
+
+          echo "Project directory:"
+          ls -la BunkerKotAndroid
+
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Extract BunkerKot project
+      - name: Install Android SDK components
         run: |
-          rm -rf extracted
-          mkdir -p extracted
+          sdkmanager "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
-          unzip -o BunkerKotAndroid_v1.5.1_arm64.zip -d extracted
-
-          echo "Структура проекта:"
-          find extracted/BunkerKotAndroid -maxdepth 2 -type f | sort
+      - name: Make Gradle executable
+        working-directory: BunkerKotAndroid
+        run: chmod +x gradlew
 
       - name: Build ARM64 APK
-        working-directory: extracted/BunkerKotAndroid
+        working-directory: BunkerKotAndroid
         run: |
-          gradle :app:assembleDebug --no-daemon
+          ./gradlew clean assembleArm64V8aRelease --stacktrace
 
       - name: Find APK
+        working-directory: BunkerKotAndroid
         run: |
-          echo "Ищем APK..."
+          find app/build/outputs/apk -type f -name "*.apk" -print
 
-          find extracted/BunkerKotAndroid/app/build/outputs \
-            -type f \
-            -name "*.apk" \
-            -print
-
-          APK=$(find extracted/BunkerKotAndroid/app/build/outputs \
-            -type f \
-            -name "*.apk" \
-            | head -n 1)
-
-          if [ -z "$APK" ]; then
-            echo "ОШИБКА: APK не найден"
-            exit 1
-          fi
-
-          echo "Найден APK:"
-          echo "$APK"
-
-          cp "$APK" BunkerKot-arm64-debug.apk
-
-          echo "Готовый APK:"
-          ls -lh BunkerKot-arm64-debug.apk
-
-      - name: Upload ARM64 APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BunkerKot-arm64-debug
-          path: BunkerKot-arm64-debug.apk
+          name: Bunker-Kot-ARM64
+          path: BunkerKotAndroid/app/build/outputs/apk/**/*.apk
           if-no-files-found: error
+          retention-days: 30

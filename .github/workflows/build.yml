@@ -9,32 +9,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Find and extract ZIP
+      - name: Extract project
         run: |
           ZIP=$(find . -maxdepth 1 -type f -name "*.zip" | head -n 1)
-          echo "Found: $ZIP"
-          unzip -o "$ZIP" -d project
-          cd project
-          find . -maxdepth 3 -type f | head -50
+          mkdir extracted
+          unzip -q "$ZIP" -d extracted
+
+          ROOT=$(find extracted -name settings.gradle -o -name settings.gradle.kts | head -n 1)
+          ROOT=$(dirname "$ROOT")
+
+          echo "Project root: $ROOT"
+          echo "PROJECT_ROOT=$ROOT" >> "$GITHUB_ENV"
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build APK
-        working-directory: project
-        run: gradle assembleDebug
+        run: |
+          cd "$PROJECT_ROOT"
+          gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: BunkerKot-debug
-          path: project/app/build/outputs/apk/debug/app-debug.apk
+          path: "${{ env.PROJECT_ROOT }}/app/build/outputs/apk/debug/app-debug.apk"

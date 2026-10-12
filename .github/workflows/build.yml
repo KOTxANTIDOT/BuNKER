@@ -12,34 +12,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Extract project
-        run: |
-          ZIP=$(find . -maxdepth 1 -type f -name "*.zip" | head -n 1)
-          mkdir extracted
-          unzip -q "$ZIP" -d extracted
-
-          ROOT=$(find extracted -name settings.gradle -o -name settings.gradle.kts | head -n 1)
-          ROOT=$(dirname "$ROOT")
-
-          echo "Project root: $ROOT"
-          echo "PROJECT_ROOT=$ROOT" >> "$GITHUB_ENV"
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build APK
+      - name: Extract project
         run: |
-          cd "$PROJECT_ROOT"
-          gradle assembleDebug
+          mkdir -p extracted
+          unzip -o BunkerKotAndroid_v1.5.0_lists_slim.zip -d extracted
+
+      - name: Build APK
+        working-directory: extracted/BunkerKotAndroid
+        run: |
+          gradle :app:assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: BunkerKot-debug
-          path: "${{ env.PROJECT_ROOT }}/app/build/outputs/apk/debug/app-debug.apk"
+          path: extracted/BunkerKotAndroid/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

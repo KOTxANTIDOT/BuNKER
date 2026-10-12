@@ -1,4 +1,4 @@
-name: Build BunkerKot APK
+name: Build BunkerKot ARM64 APK
 
 on:
   workflow_dispatch:
@@ -21,32 +21,49 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Extract project
+      - name: Extract BunkerKot project
         run: |
+          rm -rf extracted
           mkdir -p extracted
-          unzip -o BunkerKotAndroid_v1.5.0_lists_slim.zip -d extracted
 
-      - name: Build arm64 APK
+          unzip -o BunkerKotAndroid_v1.5.1_arm64.zip -d extracted
+
+          echo "Структура проекта:"
+          find extracted/BunkerKotAndroid -maxdepth 2 -type f | sort
+
+      - name: Build ARM64 APK
         working-directory: extracted/BunkerKotAndroid
         run: |
           gradle :app:assembleDebug --no-daemon
 
       - name: Find APK
         run: |
-          find extracted/BunkerKotAndroid/app/build/outputs -type f -name "*.apk" -print
+          echo "Ищем APK..."
 
-          APK=$(find extracted/BunkerKotAndroid/app/build/outputs -type f -name "*.apk" | head -n 1)
+          find extracted/BunkerKotAndroid/app/build/outputs \
+            -type f \
+            -name "*.apk" \
+            -print
+
+          APK=$(find extracted/BunkerKotAndroid/app/build/outputs \
+            -type f \
+            -name "*.apk" \
+            | head -n 1)
 
           if [ -z "$APK" ]; then
-            echo "APK не найден"
+            echo "ОШИБКА: APK не найден"
             exit 1
           fi
 
+          echo "Найден APK:"
+          echo "$APK"
+
           cp "$APK" BunkerKot-arm64-debug.apk
 
+          echo "Готовый APK:"
           ls -lh BunkerKot-arm64-debug.apk
 
-      - name: Upload APK
+      - name: Upload ARM64 APK
         uses: actions/upload-artifact@v4
         with:
           name: BunkerKot-arm64-debug

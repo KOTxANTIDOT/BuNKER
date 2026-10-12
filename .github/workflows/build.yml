@@ -23,10 +23,14 @@ jobs:
           set -euo pipefail
 
           ZIP_FILE="$(find . -maxdepth 2 -type f \
-            -name 'BunkerKotAndroid_v*.zip' -print -quit)"
+            -iname 'BunkerKot*.zip' \
+            -print -quit)"
 
           if [ -z "$ZIP_FILE" ]; then
             echo "::error::Project archive not found."
+            echo "Expected archive name like: BunkerKot_v1.6.0_beauty.zip"
+            echo "Files in repository:"
+            find . -maxdepth 2 -type f -print
             exit 1
           fi
 
@@ -40,7 +44,7 @@ jobs:
 
           if [ -z "$PROJECT_DIR" ]; then
             echo "::error::Android project was not found in the archive."
-            find extracted -maxdepth 4 -type f | head -100
+            find extracted -maxdepth 5 -type f -print
             exit 1
           fi
 
@@ -84,7 +88,7 @@ jobs:
 
           echo "Android SDK OK"
 
-      - name: Build ARM64 APK
+      - name: Build APK
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -119,7 +123,7 @@ jobs:
             exit 1
           fi
 
-          echo "APK:"
+          echo "APK generated:"
           ls -lh "$APK"
 
       - name: Upload APK

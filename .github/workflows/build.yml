@@ -90,7 +90,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          gradle --no-daemon clean assembleArm64V8aRelease --stacktrace
+          gradle --no-daemon clean assembleRelease --stacktrace
 
       - name: Find APK
         working-directory: ${{ env.PROJECT_DIR }}

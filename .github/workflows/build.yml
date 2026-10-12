@@ -47,18 +47,16 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Accept Android SDK licenses
         shell: bash
         run: |
           yes | sdkmanager --licenses > /dev/null || true
 
-      - name: Install Android SDK components
+      - name: Install Android SDK
         shell: bash
         run: |
-          sdkmanager "platform-tools" \
+          sdkmanager \
+            "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0"
 

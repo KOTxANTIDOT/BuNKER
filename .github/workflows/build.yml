@@ -26,32 +26,29 @@ jobs:
           mkdir -p extracted
           unzip -o BunkerKotAndroid_v1.5.0_lists_slim.zip -d extracted
 
-      - name: Build APK
+      - name: Build arm64 APK
         working-directory: extracted/BunkerKotAndroid
         run: |
           gradle :app:assembleDebug --no-daemon
 
       - name: Find APK
         run: |
-          echo "Ищем собранный APK..."
-          find extracted/BunkerKotAndroid/app/build/outputs/apk -type f -name "*.apk" -print
+          find extracted/BunkerKotAndroid/app/build/outputs -type f -name "*.apk" -print
 
-          APK=$(find extracted/BunkerKotAndroid/app/build/outputs/apk -type f -name "*.apk" | head -n 1)
+          APK=$(find extracted/BunkerKotAndroid/app/build/outputs -type f -name "*.apk" | head -n 1)
 
           if [ -z "$APK" ]; then
-            echo "ОШИБКА: APK не найден"
+            echo "APK не найден"
             exit 1
           fi
 
-          echo "Найден APK: $APK"
-          cp "$APK" BunkerKot-debug.apk
+          cp "$APK" BunkerKot-arm64-debug.apk
 
-          echo "Размер APK:"
-          ls -lh BunkerKot-debug.apk
+          ls -lh BunkerKot-arm64-debug.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BunkerKot-debug
-          path: BunkerKot-debug.apk
+          name: BunkerKot-arm64-debug
+          path: BunkerKot-arm64-debug.apk
           if-no-files-found: error
